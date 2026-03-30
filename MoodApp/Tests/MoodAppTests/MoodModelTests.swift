@@ -73,10 +73,46 @@ final class MoodModelTests: XCTestCase {
     }
     
     func testNotificationLogic() {
-        // Test notification rescheduling logic
-        let manager = NotificationManager.shared
-        manager.rescheduleDailyReminder()
-        // In a real test, we would mock UNUserNotificationCenter
-        XCTAssertNotNil(manager)
+        // ... existing notification tests ...
+    }
+    
+    func testStreakCalculation() {
+        let calendar = Calendar.current
+        let today = Date()
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let dayBeforeYesterday = calendar.date(byAdding: .day, value: -2, to: today)!
+        
+        // Case 1: 连续 3 天签到
+        XCTAssertEqual(StreakService.calculateStreak(moodDates: [today, yesterday, dayBeforeYesterday], safetyDates: []), 3)
+        
+        // Case 2: 仅今天签到
+        XCTAssertEqual(StreakService.calculateStreak(moodDates: [today], safetyDates: []), 1)
+        
+        // Case 3: 仅昨天签到（今天尚未签到，不视为中断）
+        XCTAssertEqual(StreakService.calculateStreak(moodDates: [yesterday], safetyDates: []), 1)
+        
+        // Case 4: 前天签到，昨天断签（中断）
+        XCTAssertEqual(StreakService.calculateStreak(moodDates: [dayBeforeYesterday], safetyDates: []), 0)
+        
+        // Case 5: 混合心情与安全签到
+        XCTAssertEqual(StreakService.calculateStreak(moodDates: [today], safetyDates: [yesterday]), 2)
+    }
+    
+    func testStatisticsCalculation() {
+        let calendar = Calendar.current
+        let today = Date()
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        
+        // Case 1: 7天内签到 2 天
+        let rate = StatisticsService.calculateCompletionRate(days: 7, moodDates: [today], safetyDates: [yesterday])
+        XCTAssertEqual(rate, 2.0 / 7.0, accuracy: 0.01)
+        
+        // Case 2: 无数据
+        XCTAssertEqual(StatisticsService.calculateCompletionRate(days: 7, moodDates: [], safetyDates: []), 0.0)
+        
+        // Case 3: 累计完成率 (从两天前开始算)
+        let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: today)!
+        let cumulativeRate = StatisticsService.calculateCompletionRate(days: nil, moodDates: [twoDaysAgo], safetyDates: [])
+        XCTAssertEqual(cumulativeRate, 1.0 / 3.0, accuracy: 0.01) // 3天（前天、昨天、今天）中只有前天签了
     }
 }

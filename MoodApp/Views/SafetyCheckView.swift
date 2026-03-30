@@ -70,9 +70,19 @@ struct SafetyCheckView: View {
     private func recordSafetyCheck() {
         let newCheck = SafetyCheck()
         modelContext.insert(newCheck)
-        updateCountdown()
-        // Reset local notifications
-        NotificationManager.shared.rescheduleSafetyReminder()
+        
+        do {
+            try modelContext.save()
+            updateCountdown()
+            // Reset local notifications
+            NotificationManager.shared.rescheduleSafetyReminder()
+            
+            // 触感反馈
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+        } catch {
+            print("Failed to save safety check: \(error)")
+        }
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {

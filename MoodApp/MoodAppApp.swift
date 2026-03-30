@@ -54,31 +54,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     
     private func performDailyCheckScan() {
         guard let container = modelContainer else { return }
-        let context = ModelContext(container)
-        
-        let now = Date()
-        let calendar = Calendar.current
-        
-        // Fetch all records
-        let moodDescriptor = FetchDescriptor<MoodRecord>(sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
-        let safetyDescriptor = FetchDescriptor<SafetyCheck>(sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
-        
-        let lastMood = try? context.fetch(moodDescriptor).first
-        let lastSafety = try? context.fetch(safetyDescriptor).first
-        
-        let lastDate = [lastMood?.timestamp, lastSafety?.timestamp].compactMap { $0 }.max() ?? Date()
-        let daysSinceLast = calendar.dateComponents([.day], from: lastDate, to: now).day ?? 0
-        
-        if daysSinceLast == 3 || daysSinceLast == 7 {
-            // Check if already warned today to prevent duplicate
-            let lastWarningDay = UserDefaults.standard.integer(forKey: AppAssets.Keys.lastMissedWarningDay)
-            let today = calendar.component(.day, from: now)
-            
-            if lastWarningDay != today {
-                NotificationManager.shared.sendMissedCheckInWarning(days: daysSinceLast)
-                UserDefaults.standard.set(today, forKey: AppAssets.Keys.lastMissedWarningDay)
-            }
-        }
+        NotificationScanService.performDailyCheckScan(container: container)
     }
 }
 

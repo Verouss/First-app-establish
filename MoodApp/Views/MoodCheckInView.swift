@@ -19,6 +19,7 @@ struct MoodCheckInView: View {
                     .padding(.top)
                 
                 HStack(spacing: 20) {
+                    let moodDescriptions = ["非常难过", "一般", "还可以", "非常开心"]
                     ForEach(0..<moods.count, id: \.self) { index in
                         Button(action: {
                             selectedMood = index
@@ -33,6 +34,8 @@ struct MoodCheckInView: View {
                                         .stroke(selectedMood == index ? AppAssets.Colors.primary : Color.clear, lineWidth: 2)
                                 )
                         }
+                        .accessibilityLabel(moodDescriptions[index])
+                        .accessibilityHint("点击选择此心情")
                     }
                 }
                 .padding()
@@ -75,7 +78,17 @@ struct MoodCheckInView: View {
         guard let selectedMood = selectedMood else { return }
         let newRecord = MoodRecord(moodValue: selectedMood)
         modelContext.insert(newRecord)
-        dismiss()
+        
+        do {
+            try modelContext.save()
+            // 触感反馈: 成功
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+            dismiss()
+        } catch {
+            print("Failed to save mood: \(error)")
+            // 这里可以添加 Alert 提示用户存储失败
+        }
     }
 }
 

@@ -100,34 +100,11 @@ struct StatisticsView: View {
     
     // 模块6.2: 签到完成率计算
     private func calculateRate(days: Int?) -> Double {
-        let calendar = Calendar.current
-        let now = Date()
-        
-        let filteredMoods: [MoodRecord]
-        let filteredSafety: [SafetyCheck]
-        let totalDays: Int
-        
-        if let days = days {
-            let startDate = calendar.date(byAdding: .day, value: -days, to: now)!
-            filteredMoods = moodRecords.filter { $0.timestamp >= startDate }
-            filteredSafety = safetyChecks.filter { $0.timestamp >= startDate }
-            totalDays = days
-        } else {
-            // Cumulative
-            let allDates = (moodRecords.map { $0.timestamp } + safetyChecks.map { $0.timestamp })
-            guard let firstDate = allDates.min() else { return 0.0 }
-            filteredMoods = moodRecords
-            filteredSafety = safetyChecks
-            totalDays = max(1, calendar.dateComponents([.day], from: firstDate, to: now).day ?? 1)
-        }
-        
-        // Days with at least one check-in
-        let moodDays = Set(filteredMoods.map { calendar.startOfDay(for: $0.timestamp) })
-        let safetyDays = Set(filteredSafety.map { calendar.startOfDay(for: $0.timestamp) })
-        let combinedDays = moodDays.union(safetyDays)
-        
-        guard totalDays > 0 else { return 0.0 }
-        return Double(combinedDays.count) / Double(totalDays)
+        StatisticsService.calculateCompletionRate(
+            days: days,
+            moodDates: moodRecords.map { $0.timestamp },
+            safetyDates: safetyChecks.map { $0.timestamp }
+        )
     }
     
     // 模块6.3: 导出功能
@@ -149,6 +126,11 @@ struct StatisticsView: View {
         do {
             try csvString.write(to: tempURL, atomically: true, encoding: .utf8)
             self.exportURL = tempURL
+            
+            // 触感反馈: 成功
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+            
             self.isExporting = true
         } catch {
             print("Export failed: \(error)")

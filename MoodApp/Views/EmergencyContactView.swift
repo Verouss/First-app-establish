@@ -86,10 +86,19 @@ struct EmergencyContactView: View {
         
         let newContact = EmergencyContact(name: name, phoneNumber: phone)
         modelContext.insert(newContact)
+        
+        do {
+            try modelContext.save()
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+        } catch {
+            print("Failed to save contact: \(error)")
+        }
     }
     
     private func deleteContact(_ contact: EmergencyContact) {
         modelContext.delete(contact)
+        try? modelContext.save()
     }
     
     private func testNotification(for contact: EmergencyContact) {

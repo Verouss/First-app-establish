@@ -7,30 +7,10 @@ struct MainView: View {
     @Query private var safetyChecks: [SafetyCheck]
     
     var streakCount: Int {
-        let allDates = (moodRecords.map { $0.timestamp } + safetyChecks.map { $0.timestamp })
-            .sorted(by: { $0 > $1 }) // Newest first
-        
-        if allDates.isEmpty { return 0 }
-        
-        let calendar = Calendar.current
-        var count = 0
-        
-        // Create a set of unique days with check-ins
-        let datesByDay = Set(allDates.map { calendar.startOfDay(for: $0) })
-        
-        // Determine the starting point for the streak check
-        var checkDate = calendar.startOfDay(for: Date())
-        if !datesByDay.contains(checkDate) { // If no check-in today, start from yesterday
-            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate)!
-        }
-        
-        while datesByDay.contains(checkDate) {
-            count += 1
-            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
-            checkDate = previousDay
-        }
-        
-        return count
+        StreakService.calculateStreak(
+            moodDates: moodRecords.map { $0.timestamp },
+            safetyDates: safetyChecks.map { $0.timestamp }
+        )
     }
     
     var body: some View {
